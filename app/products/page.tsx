@@ -1,6 +1,6 @@
 import { productApi, Product } from '@/api/product';
 import Link from 'next/link';
-
+export const dynamic = 'force-dynamic';
 export default async function ProductsPage() {
   const products = await productApi.getProducts();
 
@@ -19,9 +19,7 @@ export default async function ProductsPage() {
             <p className="text-lg font-bold mt-2">
               ¥{product.price.toLocaleString()}
             </p>
-            <p className="text-sm text-gray-500">
-              在庫: {product.stock}個
-            </p>
+            <p className="text-sm text-gray-500">在庫: {product.stock}個</p>
           </Link>
         ))}
       </div>
