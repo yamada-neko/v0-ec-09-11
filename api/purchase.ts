@@ -16,13 +16,13 @@ export type MessageResponse = {
 
 // Purchase history interface (for frontend display)
 export interface Purchase {
-  id: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  price: number;
-  total: number;
-  purchaseDate: string;
+  id: string
+  productId: string
+  productName: string
+  quantity: number
+  price: number
+  total: number
+  purchaseDate: string
 }
 
 export const purchaseApi = {
@@ -48,15 +48,11 @@ export const purchaseApi = {
 // Note: The Go backend doesn't provide endpoints to retrieve purchase history
 // This would need to be implemented in the backend if needed
 export function getPurchases(): Purchase[] {
-  console.warn(
-    'getPurchases is not implemented - backend API does not provide order retrieval endpoints'
-  );
-  return [];
+  console.warn('getPurchases is not implemented - backend API does not provide order retrieval endpoints')
+  return []
 }
 
 export function getPurchasesByUser(): Purchase[] {
-  console.warn(
-    'getPurchasesByUser is not implemented - backend API does not provide order retrieval endpoints'
-  );
-  return [];
+  console.warn('getPurchasesByUser is not implemented - backend API does not provide order retrieval endpoints')
+  return []
 }

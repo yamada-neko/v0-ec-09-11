@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Navigation } from "@/components/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { getProductById, updateProduct, type Product } from "@/lib/products"
+import { productApi, type Product } from "@/api/product"
+import { purchaseApi } from "@/api/purchase"
 import { ArrowLeft, ShoppingCart, Plus, Minus } from "lucide-react"
 
 export default function ProductDetailPage() {
@@ -24,19 +25,23 @@ export default function ProductDetailPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    if (params.id) {
-      const foundProduct = getProductById(params.id as string)
-      if (foundProduct) {
-        setProduct(foundProduct)
-      } else {
-        toast({
-          title: "エラー",
-          description: "商品が見つかりませんでした",
-          variant: "destructive",
-        })
-        router.push("/products")
+    const loadProduct = async () => {
+      if (params.id) {
+        try {
+          const productId = parseInt(params.id as string)
+          const foundProduct = await productApi.getProduct(productId)
+          setProduct(foundProduct)
+        } catch (error) {
+          toast({
+            title: "エラー",
+            description: "商品が見つかりませんでした",
+            variant: "destructive",
+          })
+          router.push("/products")
+        }
       }
     }
+    loadProduct()
   }, [params.id, router, toast])
 
   const handleQuantityChange = (change: number) => {
@@ -47,7 +52,7 @@ export default function ProductDetailPage() {
   }
 
   const handlePurchase = async () => {
-    if (!product || !user) {
+    if (!product || !user || !user.token) {
       toast({
         title: "エラー",
         description: "ログインが必要です",
@@ -67,28 +72,21 @@ export default function ProductDetailPage() {
 
     setIsLoading(true)
 
-    // 在庫を減らす
-    const updatedProduct = updateProduct(product.id, {
-      stock: product.stock - quantity,
-    })
-
-    if (updatedProduct) {
-      setProduct(updatedProduct)
-
-      // 購入履歴をLocalStorageに保存
-      const purchases = JSON.parse(localStorage.getItem("purchases") || "[]")
-      const newPurchase = {
-        id: Date.now().toString(),
-        productId: product.id,
-        productName: product.name,
-        quantity,
-        price: product.price,
-        total: product.price * quantity,
-        purchaseDate: new Date().toISOString(),
-        userEmail: user.email,
+    try {
+      // Use the real purchase API
+      const purchaseData = {
+        items: [{
+          product_id: product.id,
+          quantity: quantity
+        }],
+        address: "デフォルト住所" // This should be collected from user input in a real app
       }
-      purchases.push(newPurchase)
-      localStorage.setItem("purchases", JSON.stringify(purchases))
+
+      await purchaseApi.createPurchase(purchaseData, user.token)
+
+      // Refresh product data to get updated stock
+      const updatedProduct = await productApi.getProduct(product.id)
+      setProduct(updatedProduct)
 
       toast({
         title: "購入完了",
@@ -96,7 +94,7 @@ export default function ProductDetailPage() {
       })
 
       setQuantity(1)
-    } else {
+    } catch (error) {
       toast({
         title: "エラー",
         description: "購入処理に失敗しました",
@@ -136,11 +134,9 @@ export default function ProductDetailPage() {
           <div className="space-y-4">
             <Card>
               <CardContent className="p-0">
-                <img
-                  src={product.image || "/placeholder.svg"}
-                  alt={product.name}
-                  className="w-full h-96 object-cover rounded-lg"
-                />
+                <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-500 text-lg">画像なし</span>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -148,7 +144,6 @@ export default function ProductDetailPage() {
           {/* 商品情報 */}
           <div className="space-y-6">
             <div>
-              <Badge className="mb-2 bg-indigo-600 hover:bg-indigo-700">{product.category}</Badge>
               <h1 className="text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
               <p className="text-gray-600 text-lg leading-relaxed">{product.description}</p>
             </div>

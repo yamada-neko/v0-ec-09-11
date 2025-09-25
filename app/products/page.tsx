@@ -20,7 +20,7 @@ export default async function ProductsPage() {
               ¥{product.price.toLocaleString()}
             </p>
             <p className="text-sm text-gray-500">
-              在庫: {product.stockQuantity}個
+              在庫: {product.stock}個
             </p>
           </Link>
         ))}

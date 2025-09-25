@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Navigation } from "@/components/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { getProducts, addProduct, deleteProduct, type Product } from "@/lib/products"
+import { productApi, type Product, type CreateProductDto } from "@/api/product"
 import { Trash2, Plus } from "lucide-react"
 
 export default function AdminPage() {
@@ -23,19 +23,33 @@ export default function AdminPage() {
     name: "",
     description: "",
     price: "",
-    category: "",
     stock: "",
-    image: "",
   })
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    setProducts(getProducts())
+    const loadProducts = async () => {
+      try {
+        setLoading(true)
+        const fetchedProducts = await productApi.getProducts()
+        setProducts(fetchedProducts)
+      } catch (error) {
+        toast({
+          title: "エラー",
+          description: "商品の取得に失敗しました",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadProducts()
   }, [])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.price || !formData.category) {
+    if (!formData.name || !formData.price) {
       toast({
         title: "エラー",
         description: "必須項目を入力してください",
@@ -44,40 +58,59 @@ export default function AdminPage() {
       return
     }
 
-    const newProduct = addProduct({
-      name: formData.name,
-      description: formData.description,
-      price: Number(formData.price),
-      category: formData.category,
-      stock: Number(formData.stock) || 0,
-      image: formData.image || "/placeholder.svg?key=u3nd4",
-    })
+    if (!user?.token) {
+      toast({
+        title: "エラー",
+        description: "認証が必要です",
+        variant: "destructive",
+      })
+      return
+    }
 
-    setProducts(getProducts())
-    setFormData({
-      name: "",
-      description: "",
-      price: "",
-      category: "",
-      stock: "",
-      image: "",
-    })
-    setShowAddForm(false)
+    try {
+      setLoading(true)
+      const productData: CreateProductDto = {
+        name: formData.name,
+        description: formData.description,
+        price: Number(formData.price),
+        stock: Number(formData.stock) || 0,
+      }
 
-    toast({
-      title: "商品追加完了",
-      description: `${newProduct.name}を追加しました`,
-    })
+      const newProduct = await productApi.createProduct(productData, user.token)
+
+      // Refresh products list
+      const fetchedProducts = await productApi.getProducts()
+      setProducts(fetchedProducts)
+
+      setFormData({
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+      })
+      setShowAddForm(false)
+
+      toast({
+        title: "商品追加完了",
+        description: `${newProduct.name}を追加しました`,
+      })
+    } catch (error) {
+      toast({
+        title: "エラー",
+        description: "商品の追加に失敗しました",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleDelete = (id: string, name: string) => {
-    if (deleteProduct(id)) {
-      setProducts(getProducts())
-      toast({
-        title: "商品削除完了",
-        description: `${name}を削除しました`,
-      })
-    }
+  const handleDelete = (id: number, name: string) => {
+    toast({
+      title: "機能無効",
+      description: "商品削除はバックエンドAPIでサポートされていません",
+      variant: "destructive",
+    })
   }
 
   if (!user) {
@@ -139,16 +172,6 @@ export default function AdminPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">カテゴリ *</Label>
-                    <Input
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      placeholder="カテゴリを入力"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
                     <Label htmlFor="stock">在庫数</Label>
                     <Input
                       id="stock"
@@ -167,15 +190,6 @@ export default function AdminPage() {
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="商品の説明を入力"
                     rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="image">画像URL</Label>
-                  <Input
-                    id="image"
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    placeholder="画像URLを入力（空白の場合はデフォルト画像）"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -198,7 +212,7 @@ export default function AdminPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-lg">{product.name}</CardTitle>
-                    <CardDescription>{product.category}</CardDescription>
+                    <CardDescription>商品ID: {product.id}</CardDescription>
                   </div>
                   <Button variant="destructive" size="sm" onClick={() => handleDelete(product.id, product.name)}>
                     <Trash2 className="w-4 h-4" />
@@ -206,11 +220,9 @@ export default function AdminPage() {
                 </div>
               </CardHeader>
               <CardContent>
-                <img
-                  src={product.image || "/placeholder.svg"}
-                  alt={product.name}
-                  className="w-full h-32 object-cover rounded mb-3"
-                />
+                <div className="w-full h-32 bg-gray-200 rounded mb-3 flex items-center justify-center">
+                  <span className="text-gray-500">画像なし</span>
+                </div>
                 <p className="text-sm text-gray-600 mb-2">{product.description}</p>
                 <div className="flex justify-between items-center">
                   <span className="font-bold text-lg">¥{product.price.toLocaleString()}</span>

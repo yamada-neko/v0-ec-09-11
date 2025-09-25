@@ -38,10 +38,7 @@ export const productApi = {
   },
 
   // 商品を新規作成
-  createProduct: async (
-    data: CreateProductDto,
-    token: string
-  ): Promise<Product> => {
+  createProduct: async (data: CreateProductDto, token: string): Promise<Product> => {
     const response = await fetch(`${API_URL}/api/products`, {
       method: 'POST',
       headers: {

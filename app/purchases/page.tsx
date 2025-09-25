@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth-provider"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navigation } from "@/components/navigation"
-import { getPurchasesByUser, type Purchase } from "@/lib/purchases"
+import { getPurchasesByUser, type Purchase } from "@/api/purchase"
 import { ArrowLeft, Package } from "lucide-react"
 
 export default function PurchasesPage() {
@@ -14,9 +14,9 @@ export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([])
 
   useEffect(() => {
-    if (user) {
-      setPurchases(getPurchasesByUser(user.email))
-    }
+    // Note: The backend API doesn't provide endpoints to retrieve purchase history
+    // This feature would need to be implemented in the backend
+    setPurchases([])
   }, [user])
 
   if (!user) {
@@ -61,7 +61,8 @@ export default function PurchasesPage() {
             <Card>
               <CardContent className="p-8 text-center">
                 <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-lg text-gray-500 mb-4">まだ購入履歴がありません</p>
+                <p className="text-lg text-gray-500 mb-4">購入履歴の表示機能は現在利用できません</p>
+                <p className="text-sm text-gray-400 mb-4">この機能はバックエンドAPIで実装されていません</p>
                 <Link href="/products">
                   <Button className="bg-indigo-600 hover:bg-indigo-700">商品を見る</Button>
                 </Link>
