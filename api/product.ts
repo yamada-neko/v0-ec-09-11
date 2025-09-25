@@ -1,20 +1,19 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 export type Product = {
   id: number;
   name: string;
   description: string;
   price: number;
-  stockQuantity: number;
-  createdAt: string;
-  updatedAt: string;
+  stock: number;
+  created_at: string;
 };
 
 export type CreateProductDto = {
   name: string;
   description: string;
   price: number;
-  stockQuantity: number;
+  stock: number;
 };
 
 export type UpdateProductDto = Partial<CreateProductDto>;
@@ -22,7 +21,7 @@ export type UpdateProductDto = Partial<CreateProductDto>;
 export const productApi = {
   // 商品一覧を取得
   getProducts: async (): Promise<Product[]> => {
-    const response = await fetch(`${API_URL}/products`);
+    const response = await fetch(`${API_URL}/api/products`);
     if (!response.ok) {
       throw new Error('Failed to fetch products');
     }
@@ -31,7 +30,7 @@ export const productApi = {
 
   // 商品詳細を取得
   getProduct: async (id: number): Promise<Product> => {
-    const response = await fetch(`${API_URL}/products/${id}`);
+    const response = await fetch(`${API_URL}/api/products/${id}`);
     if (!response.ok) {
       throw new Error('Failed to fetch product');
     }
@@ -39,11 +38,15 @@ export const productApi = {
   },
 
   // 商品を新規作成
-  createProduct: async (data: CreateProductDto): Promise<Product> => {
-    const response = await fetch(`${API_URL}/products`, {
+  createProduct: async (
+    data: CreateProductDto,
+    token: string
+  ): Promise<Product> => {
+    const response = await fetch(`${API_URL}/api/products`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -53,31 +56,17 @@ export const productApi = {
     return response.json();
   },
 
-  // 商品情報を更新
+  // Note: The Go backend doesn't support product updates or deletes
+  // These operations are not available in the current API
   updateProduct: async (
     id: number,
-    data: UpdateProductDto
+    data: UpdateProductDto,
+    token: string
   ): Promise<Product> => {
-    const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    });
-    if (!response.ok) {
-      throw new Error('Failed to update product');
-    }
-    return response.json();
+    throw new Error('Product updates are not supported by the backend API');
   },
 
-  // 商品を削除
-  deleteProduct: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_URL}/products/${id}`, {
-      method: 'DELETE',
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete product');
-    }
+  deleteProduct: async (id: number, token: string): Promise<void> => {
+    throw new Error('Product deletion is not supported by the backend API');
   },
 };
